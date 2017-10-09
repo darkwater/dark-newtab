@@ -1,5 +1,6 @@
 let groupTemplate    = document.getElementById("tmpl-group");
 let bookmarkTemplate = document.getElementById("tmpl-bookmark");
+let container        = document.getElementById("container");
 
 class Template {
     constructor(templateElement) {
@@ -30,6 +31,12 @@ class Bookmark extends Template {
         let title = this.getElement("title");
         title.firstElementChild.innerText = bookmark.title;
         title.href = bookmark.url;
+        title.addEventListener("click", e => {
+            // normal links don't work for local resources
+            // such as file:// and chrome://
+            e.preventDefault();
+            chrome.tabs.update({ url: bookmark.url });
+        });
 
         let img = document.createElement("img");
         img.src = "chrome://favicon/" + bookmark.url;
@@ -43,5 +50,5 @@ chrome.bookmarks.getTree(tree => {
     let newtab = others.children.find(folder => folder.title == "New Tab");
 
     let groups = newtab.children.map(folder => new Group(folder));
-    groups.forEach(group => document.body.appendChild(group.element));
+    groups.forEach(group => container.appendChild(group.element));
 });
