@@ -1,6 +1,13 @@
-let groupTemplate    = document.getElementById("tmpl-group");
-let bookmarkTemplate = document.getElementById("tmpl-bookmark");
-let container        = document.getElementById("container");
+let chrome_height = 66; // address bar, tabs
+
+function updateBackgroundPosition() {
+    document.firstElementChild.style.backgroundPositionX = ( -window.screenX ) + "px";
+    document.firstElementChild.style.backgroundPositionY = ( -window.screenY - chrome_height ) + "px";
+}
+updateBackgroundPosition();
+setInterval(updateBackgroundPosition, 100);
+
+let groupTemplate, bookmarkTemplate, container;
 
 class Template {
     constructor(templateElement) {
@@ -45,10 +52,16 @@ class Bookmark extends Template {
     }
 }
 
-chrome.bookmarks.getTree(tree => {
-    let others = tree[0].children.find(folder => folder.title == "Other bookmarks");
-    let newtab = others.children.find(folder => folder.title == "New Tab");
+document.addEventListener("DOMContentLoaded", () => {
+    groupTemplate    = document.getElementById("tmpl-group");
+    bookmarkTemplate = document.getElementById("tmpl-bookmark");
+    container        = document.getElementById("container");
 
-    let groups = newtab.children.map(folder => new Group(folder));
-    groups.forEach(group => container.appendChild(group.element));
+    chrome.bookmarks.getTree(tree => {
+        let others = tree[0].children.find(folder => folder.title == "Other bookmarks");
+        let newtab = others.children.find(folder => folder.title == "New Tab");
+
+        let groups = newtab.children.map(folder => new Group(folder));
+        groups.forEach(group => container.appendChild(group.element));
+    });
 });

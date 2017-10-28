@@ -2,7 +2,11 @@
     "manifest_version": 2,
     "name": "dark-newtab",
     "version": "0.1",
-    "permissions": [ "bookmarks", "chrome://favicon/" ],
+    "permissions": [
+        "bookmarks",
+        "chrome://favicon/",
+        "http://localhost/"
+    ],
     "chrome_url_overrides": {
         "newtab": "newtab.html"
     }
