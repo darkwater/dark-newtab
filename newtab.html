@@ -3,23 +3,24 @@
     <head>
         <title>New Tab</title>
         <link rel="stylesheet" type="text/css" href="newtab.css" />
+        <script type="text/javascript" src="vibrant.min.js"></script>
+        <script type="text/javascript" src="newtab.js"></script>
     </head>
     <body>
-        <script type="text/javascript" src="newtab.js"></script>
-
         <template id="tmpl-group">
             <div class="group">
                 <div class="group-header" name="title">
                     Group title
                 </div>
-                <div name="bookmarks"></div>
+                <div class="group-bookmarks" name="bookmarks"></div>
             </div>
         </template>
 
         <template id="tmpl-bookmark">
             <div class="bookmark">
-                <a class="bookmark-link" name="title">
-                    <span>Bookmark</span>
+                <a class="bookmark-link" name="link">
+                    <div class="bookmark-icon" name="icon"></div>
+                    <span name="label">Bookmark</span>
                 </a>
             </div>
         </template>

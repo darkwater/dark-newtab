@@ -35,8 +35,7 @@ class Bookmark extends Template {
     constructor(bookmark) {
         super(bookmarkTemplate);
 
-        let title = this.getElement("title");
-        title.firstElementChild.innerText = bookmark.title;
+        let title = this.getElement("link");
         title.href = bookmark.url;
         title.addEventListener("click", e => {
             // normal links don't work for local resources
@@ -45,10 +44,43 @@ class Bookmark extends Template {
             chrome.tabs.update({ url: bookmark.url });
         });
 
-        let img = document.createElement("img");
-        img.src = "chrome://favicon/" + bookmark.url;
-        img.classList.add("bookmark-icon");
-        title.insertAdjacentElement("afterbegin", img);
+        let label = this.getElement("label");
+        label.innerText = bookmark.title;
+
+        let icon = this.getElement("icon");
+        let store_key = "color for " + bookmark.url;
+        chrome.storage.sync.get(store_key, obj => {
+            let color = obj[store_key];
+
+            if (color) {
+                icon.style.backgroundColor = color;
+            } else {
+                let img = document.createElement("img");
+                img.src = "chrome://favicon/" + bookmark.url;
+                img.onload = () => {
+                    let color;
+                    try {
+                        let colors = new Vibrant(img, 32, 5);
+
+                        color = "rgb(" + (
+                            colors.LightVibrantSwatch ||
+                            colors.LightMutedSwatch ||
+                            colors.VibrantSwatch ||
+                            colors.MutedSwatch ||
+                            colors._swatches[0]
+                        ).rgb.join() + ")";
+                    } catch (_) {
+                        color = "white";
+                    }
+
+                    let obj = {};
+                    obj[store_key] = color;
+                    chrome.storage.sync.set(obj);
+                    icon.style.backgroundColor = color;
+                    icon.attributes['data-color'] = color;
+                };
+            }
+        });
     }
 }
 
