@@ -1,8 +1,9 @@
-let chrome_height = 66; // address bar, tabs
+let chromeHeight = 66; // address bar, tabs
+let hintCharacters = "qwerasdfzxcv";
 
 function updateBackgroundPosition() {
     document.firstElementChild.style.backgroundPositionX = ( -window.screenX ) + "px";
-    document.firstElementChild.style.backgroundPositionY = ( -window.screenY - chrome_height ) + "px";
+    document.firstElementChild.style.backgroundPositionY = ( -window.screenY - chromeHeight ) + "px";
 }
 updateBackgroundPosition();
 setInterval(updateBackgroundPosition, 100);
@@ -20,23 +21,32 @@ class Template {
 }
 
 class Group extends Template {
-    constructor(bookmarkFolder) {
+    constructor(bookmarkFolder, groupIndex) {
         super(groupTemplate);
 
-        this.getElement("title").innerText = bookmarkFolder.title;
+        let groupHint = hintCharacters[groupIndex];
+        this.element.firstElementChild.setAttribute("group-hint", groupHint);
 
-        let bookmarks = bookmarkFolder.children.map(child => new Bookmark(child));
+        this.getElement("title").innerText = bookmarkFolder.title;
+        this.getElement("hint").innerText  = groupHint;
+
+        let bookmarks = bookmarkFolder.children.map((child, bookmarkIndex) => {
+            let hint = groupHint + hintCharacters[bookmarkIndex];
+            return new Bookmark(child, hint);
+        });
+
         let slot = this.getElement("bookmarks");
         bookmarks.forEach(bookmark => slot.appendChild(bookmark.element));
     }
 }
 
 class Bookmark extends Template {
-    constructor(bookmark) {
+    constructor(bookmark, hint) {
         super(bookmarkTemplate);
 
         let title = this.getElement("link");
         title.href = bookmark.url;
+        title.setAttribute("bookmark-hint", hint);
         title.addEventListener("click", e => {
             // normal links don't work for local resources
             // such as file:// and chrome://
@@ -48,11 +58,13 @@ class Bookmark extends Template {
         label.innerText = bookmark.title;
 
         let icon = this.getElement("icon");
-        let store_key = "color for " + bookmark.url;
-        chrome.storage.sync.get(store_key, obj => {
-            let color = obj[store_key];
+        icon.innerText = hint[1];
+        let storeKey = "color for " + bookmark.url;
+        chrome.storage.sync.get(storeKey, obj => {
+            let color = obj[storeKey];
 
             if (color) {
+                icon.style.color = color;
                 icon.style.backgroundColor = color;
             } else {
                 let img = document.createElement("img");
@@ -74,10 +86,10 @@ class Bookmark extends Template {
                     }
 
                     let obj = {};
-                    obj[store_key] = color;
+                    obj[storeKey] = color;
                     chrome.storage.sync.set(obj);
+                    icon.style.color = color;
                     icon.style.backgroundColor = color;
-                    icon.attributes['data-color'] = color;
                 };
             }
         });
@@ -93,7 +105,38 @@ document.addEventListener("DOMContentLoaded", () => {
         let others = tree[0].children.find(folder => folder.title == "Other bookmarks");
         let newtab = others.children.find(folder => folder.title == "New Tab");
 
-        let groups = newtab.children.map(folder => new Group(folder));
+        let groups = newtab.children.map((folder, index) => new Group(folder, index));
         groups.forEach(group => container.appendChild(group.element));
+    });
+
+    let hintInput = document.getElementById("hint-input");
+    hintInput.value = "";
+    hintInput.addEventListener("focus",  () => document.body.classList.add("hint-mode"));
+    hintInput.addEventListener("blur",   () => document.body.classList.remove("hint-mode"));
+    hintInput.addEventListener("keydown", e => {
+        let hint = hintInput.value;
+        if (e.key.length == 1) hint += e.key;
+        if (e.key == "Backspace") {
+            hint = hint.substring(0, hint.length - 1);
+            hintInput.classList.remove("invalid");
+        }
+
+        let groupHint    = hint[0];
+
+        document.querySelectorAll(".group").forEach(elem => {
+            elem.setAttribute("hint-fadeout", !!groupHint && (elem.getAttribute("group-hint") != groupHint));
+        });
+
+        if (hint.length == 2) {
+            let bookmark = document.querySelector(`.bookmark-link[bookmark-hint="${hint}"]`);
+
+            if (bookmark) {
+                bookmark.classList.add("selected");
+                bookmark.click();
+                setTimeout(() => bookmark.classList.remove("selected"), 3000);
+            } else {
+                hintInput.classList.add("invalid");
+            }
+        }
     });
 });
