@@ -51,7 +51,14 @@ class Bookmark extends Template {
             // normal links don't work for local resources
             // such as file:// and chrome://
             e.preventDefault();
-            chrome.tabs.update({ url: bookmark.url });
+            chrome.tabs.getCurrent(tab => {
+                if (tab.pinned) {
+                    chrome.tabs.create({ url: bookmark.url, openerTabId: tab.id });
+                    location.reload();
+                } else {
+                    chrome.tabs.update({ url: bookmark.url });
+                }
+            });
         });
 
         let label = this.getElement("label");
@@ -120,8 +127,13 @@ document.addEventListener("DOMContentLoaded", () => {
             hint = hint.substring(0, hint.length - 1);
             hintInput.classList.remove("invalid");
         }
+        if (e.key == "Escape") {
+            hint = "";
+            hintInput.value = "";
+            hintInput.classList.remove("invalid");
+        }
 
-        let groupHint    = hint[0];
+        let groupHint = hint[0];
 
         document.querySelectorAll(".group").forEach(elem => {
             elem.setAttribute("hint-fadeout", !!groupHint && (elem.getAttribute("group-hint") != groupHint));
